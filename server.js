@@ -1,33 +1,32 @@
-var express         =       require("express");
-var multer          =       require('multer');
-var app             =       express();
-var upload      =   multer({ dest: './uploads/'});
+module.exports = function(app, models) {
 
-app.use(multer({ dest: './uploads/',
-    rename: function (fieldname, filename) {
-        return filename+Date.now();
-    },
-    onFileUploadStart: function (file) {
-        console.log(file.originalname + ' is starting ...');
-    },
-    onFileUploadComplete: function (file) {
-        console.log(file.fieldname + ' uploaded to  ' + file.path)
-    }
-}));
+    var fs = require('fs');
+    var AWS = require('aws-sdk');
+    var accessKeyId =  process.env.AWS_ACCESS_KEY || "AKIAI5BFEWOMOIF73BXQ";
+    var secretAccessKey = process.env.AWS_SECRET_KEY || "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";
 
-app.get('/',function(req,res){
-      res.sendfile(__dirname + "/views/index.html");
-});
-
-app.post('/api/photo',function(req,res){
-    upload(req,res,function(err) {
-        if(err) {
-            return res.end("Error uploading file.");
-        }
-        res.end("File is uploaded");
+    AWS.config.update({
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey
     });
-});
 
-app.listen(3000,function(){
-    console.log("Working on port 3000");
-});
+    var s3 = new AWS.S3();
+
+    app.post('/upload', function(req, res){
+
+        var params = {
+            Bucket: 'nodefile',
+            Key: 'myKey1234.xlsx',
+            Body: "Hello"
+        };
+
+        s3.putObject(params, function (perr, pres) {
+            if (perr) {
+                console.log("Error uploading data: ", perr);
+            } else {
+                console.log("Successfully uploaded data to myBucket/myKey");
+            }
+        });
+    });
+
+}
